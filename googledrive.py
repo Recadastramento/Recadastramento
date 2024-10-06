@@ -8,8 +8,8 @@ from googleapiclient.discovery import build
 SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
 
 # Caminho para o arquivo de credenciais JSON
-cod_token = "Projeto Recadastro\\Versão Deploy\\token.json"
-cod_cred = "Projeto Recadastro\\Versão Deploy\\credentials.json"
+cod_token = "token.json"
+cod_cred = "credentials.json"
 CLIENT_SECRET_FILE = cod_token  # Altere para o seu caminho
 
 # Verificar se o token de acesso já existe
