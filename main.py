@@ -7,13 +7,13 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from googledrive import df
-from googledrive import cod_token
-from googledrive import cod_cred
+
 
 
 #CadastrosPIB = pd.read_csv("Projeto Recadastro\\Versão de Produção Recadastro\\Versão de produção 2\\Membros.csv")
 TesteCadastroPIB = df
-
+cod_token = "Gtoken.json"
+cod_cred = "Gcredentials.json"
 def main(pagina):
     Rc = ft.Text("Recadastramento")
     Usuarios = ["admin"]
