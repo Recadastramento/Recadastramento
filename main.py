@@ -175,6 +175,7 @@ def main(pagina):
     ],
     value="",  # Valor padrão
     )
+    #-------------------------------------------------------------------
     def upload_to_drive(file_path):
         SCOPES = ['https://www.googleapis.com/auth/drive.file']
 
@@ -216,14 +217,12 @@ def main(pagina):
     def on_file_picked(result):
         if result.files:
             file_path = result.files[0].path
-            pagina.snack_bar = ft.SnackBar(ft.Text("Upload in progress..."), open=True)
-            pagina.update()
             link = upload_to_drive(file_path)
             global link_foto
             link_foto.value = link
-            pagina.snack_bar = ft.SnackBar(ft.Text(f"Link gerado: {link}"), open=True)
+            janela_recadastro.open = False
+            concluir_janela.open = True
             pagina.update()
-            print(link_foto)
 
     # Função chamada ao clicar no botão
     def on_upload(evento):
@@ -231,6 +230,8 @@ def main(pagina):
 
 
     B_foto = ft.ElevatedButton("Inserir foto", on_click=on_upload)
+    #-------------------------------------------------------------------
+ 
     def confirmando(evento):
         
         #-------------------------------------
@@ -504,7 +505,7 @@ def main(pagina):
             concluir_janela.open = False
             pagina.update()
 
-    titulo_concluir = ft.Text("Cadastro concluído")
+    titulo_concluir = ft.Text("Carregamento concluído")
     ok = ft.ElevatedButton("OK", on_click=fechar_ok)
 
     concluir_janela = ft.AlertDialog(
