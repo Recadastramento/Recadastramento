@@ -9,8 +9,6 @@ from googleapiclient.errors import HttpError
 from googledrive import df
 
 TesteCadastroPIB = df
-cod_token = "Gtoken.json"
-cod_cred = "Gcredentials.json"
 def main(pagina):
     Rc = ft.Text("Recadastramento")
     Usuarios = ["admin"]
