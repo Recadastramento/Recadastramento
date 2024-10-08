@@ -8,9 +8,6 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from googledrive import df
 
-
-
-#CadastrosPIB = pd.read_csv("Projeto Recadastro\\Versão de Produção Recadastro\\Versão de produção 2\\Membros.csv")
 TesteCadastroPIB = df
 cod_token = "Gtoken.json"
 cod_cred = "Gcredentials.json"
@@ -46,7 +43,8 @@ def main(pagina):
     lista_nomes = ft.TextField(label="Nome Completo", on_change=atualizar_sugestoes)
 
     # Tópicos do Cadastro
-    #por foto
+    link_foto = ft.TextField(label="link")
+    link_foto.value = " " # valor padrão
     #-------------------------------------------------------------------
     matricula = ft.TextField(label="Matrícula")
     nomecompleto = ft.TextField(label="Nome")
@@ -177,60 +175,64 @@ def main(pagina):
     ],
     value="",  # Valor padrão
     )
+    def upload_to_drive(file_path):
+        SCOPES = ['https://www.googleapis.com/auth/drive.file']
 
+        # Autenticação via OAuth2
+        creds = None
+        if os.path.exists("Ftoken.json"):
+            creds = Credentials.from_authorized_user_file("Ftoken.json", SCOPES)
+        
+        if not creds or not creds.valid:
+            if creds and creds.expired and creds.refresh_token:
+                creds.refresh(Request())
+            else:
+                flow = InstalledAppFlow.from_client_secrets_file("credentials.json", SCOPES)
+                creds = flow.run_local_server(port=0)
+            
+            with open("Ftoken.json", 'w') as token:
+                token.write(creds.to_json())
+        
+        service = build('drive', 'v3', credentials=creds)
+
+        # Carregar o arquivo para o Google Drive
+        file_metadata = {'name': os.path.basename(file_path)}
+        media = MediaIoBaseUpload(io.FileIO(file_path, 'rb'), mimetype='image/jpeg')
+        file = service.files().create(body=file_metadata, media_body=media, fields='id').execute()
+
+        # Obter o link de compartilhamento
+        file_id = file.get('id')
+        service.permissions().create(
+            fileId=file_id,
+            body={'type': 'anyone', 'role': 'reader'}
+        ).execute()
+
+        link = f"https://drive.google.com/thumbnail?sz=w500&id={file_id}"
+        return link
+    file_dialog = ft.FilePicker(on_result=lambda result: on_file_picked(result))
+    pagina.overlay.append(file_dialog)
+    
+    # Função executada após o arquivo ser selecionado
+    def on_file_picked(result):
+        if result.files:
+            file_path = result.files[0].path
+            pagina.snack_bar = ft.SnackBar(ft.Text("Upload in progress..."), open=True)
+            pagina.update()
+            link = upload_to_drive(file_path)
+            global link_foto
+            link_foto.value = link
+            pagina.snack_bar = ft.SnackBar(ft.Text(f"Link gerado: {link}"), open=True)
+            pagina.update()
+            print(link_foto)
+
+    # Função chamada ao clicar no botão
+    def on_upload(evento):
+        file_dialog.pick_files(allow_multiple=False)
+
+
+    B_foto = ft.ElevatedButton("Inserir foto", on_click=on_upload)
     def confirmando(evento):
-        nomecompleto_valor = nomecompleto.value
-        matricula_valor = matricula.value
-        cpf_valor = cpf.value
-        datanascimento_valor = datanascimento.value
-        sexo_valor = sexo.value
-        tipo_sanguineo_valor = tipo_sanguineo.value
-        estado_civil_valor = estado_civil.value
-        datacasamento_valor = datacasamento.value
-        profissao_valor = profissao.value
-        naturalidade_valor = naturalidade.value
-        nacionalidade_valor = nacionalidade.value
-        rua_valor = rua.value
-        complemento_valor = complemento.value
-        bairro_valor = bairro.value
-        municipio_valor = municipio.value
-        estado_valor = estado.value
-        cep_valor = cep.value
-        tel_residencial_valor = tel_residencial.value
-        tel_celular_valor = tel_celular.value
-        email_valor = email.value
-        nome_pai_valor = nome_pai.value
-        nome_mae_valor = nome_mae.value
-        nome_conjuge_valor = nome_conjuge.value
-        datanascimento_conjuge_valor = datanascimento_conjuge.value
-        cargo_atual_valor = cargo_atual.value
-        databatismo_valor = databatismo.value
-        igrejabatismo_valor = igrejabatismo.value
-        entradaPIB_valor = entradaPIB.value
-        formaentrada_valor = formaentrada.value
-        pai_membro_valor = pai_membro.value
-        mae_membro_valor = mae_membro.value
-        conjuge_membro_valor = conjuge_membro.value
         
-        nome_filho1_valor = nome_filho1.value
-        datanascimento_filho1_valor = datanascimento_filho1.value
-        filho1_membro_valor = filho1_membro.value
-        
-        nome_filho2_valor = nome_filho2.value
-        datanascimento_filho2_valor = datanascimento_filho2.value 
-        filho2_membro_valor = filho2_membro.value
-
-        nome_filho3_valor = nome_filho3.value
-        datanascimento_filho3_valor = datanascimento_filho3.value 
-        filho3_membro_valor = filho3_membro.value
-
-        nome_filho4_valor = nome_filho4.value
-        datanascimento_filho4_valor = datanascimento_filho4.value 
-        filho4_membro_valor = filho4_membro.value
-
-        nome_filho5_valor = nome_filho5.value
-        datanascimento_filho5_valor = datanascimento_filho5.value 
-        filho5_membro_valor = filho5_membro.value
         #-------------------------------------
         #Definir Campos de preenchimento Obrigatório 
         #-------------------------------------
@@ -262,53 +264,54 @@ def main(pagina):
             sheet = service.spreadsheets()
             
             dados = {
-                "Nome Completo": [nomecompleto_valor],
-                "Matrícula": [str(matricula_valor)], 
-                "CPF": [str(cpf_valor)], 
-                "Data de Nascimento": [str(datanascimento_valor)],  
-                "Sexo": [str(sexo_valor)],  
-                "Tipo Sanguíneo": [str(tipo_sanguineo_valor)],  
-                "Estado Civil": [str(estado_civil_valor)],  
-                "Data de Casamento": [str(datacasamento_valor)],  
-                "Profissão": [str(profissao_valor)],  
-                "Naturalidade": [str(naturalidade_valor)], 
-                "Nacionalidade": [str(nacionalidade_valor)], 
-                "Rua": [str(rua_valor)], 
-                "Complemento": [str(complemento_valor)],  
-                "Bairro": [str(bairro_valor)], 
-                "Município": [str(municipio_valor)],  
-                "Estado": [str(estado_valor)],  
-                "CEP": [str(cep_valor)],  
-                "Tel. Residencial": [str(tel_residencial_valor)],  
-                "Tel. Celular": [str(tel_celular_valor)],  
-                "E-mail": [str(email_valor)],  
-                "Nome do Pai": [str(nome_pai_valor)],  
-                "Pai Membro": [str(pai_membro_valor)],
-                "Nome da Mãe": [str(nome_mae_valor)], 
-                "Mãe Membro": [str(mae_membro_valor)],
-                "Nome do Conjuge":[str(nome_conjuge_valor)],
-                "Data de Nascimento Conjuge": [str(datanascimento_conjuge_valor)],
-                "Conjuge Membro": [str(conjuge_membro_valor)],
-                "Cargo atual": [str(cargo_atual_valor)],
-                "Data Batismo": [str(databatismo_valor)],
-                "Igreja Batismo":[str(igrejabatismo_valor)],
-                "Data de Entrada PIB": [str(entradaPIB_valor)],
-                "Forma de entrada": [str(formaentrada_valor)],
-                "Nome do filho(a) 1": [str(nome_filho1_valor)],
-                "Data de Nascimento do filho(a) 1": [str(datanascimento_filho1_valor)],
-                "Seu filho(a) 1 é membro da PIB Pavuna?": [str(filho1_membro_valor)],
-                "Nome do filho(a) 2": [str(nome_filho2_valor)],
-                "Data de Nascimento do filho(a) 2": [str(datanascimento_filho2_valor)],
-                "Seu filho(a) 2 é membro da PIB Pavuna?": [str(filho2_membro_valor)],
-                "Nome do filho(a) 3": [str(nome_filho3_valor)],
-                "Data de Nascimento do filho(a) 3": [str(datanascimento_filho3_valor)],
-                "Seu filho(a) 3 é membro da PIB Pavuna?": [str(filho3_membro_valor)],
-                "Nome do filho(a) 4": [str(nome_filho4_valor)],
-                "Data de Nascimento do filho(a) 4": [str(datanascimento_filho4_valor)],
-                "Seu filho(a) 4 é membro da PIB Pavuna?": [str(filho4_membro_valor)],
-                "Nome do filho(a) 5": [str(nome_filho5_valor)],
-                "Data de Nascimento do filho(a) 5": [str(datanascimento_filho5_valor)],
-                "Seu filho(a) 5 é membro da PIB Pavuna?": [str(filho5_membro_valor)]
+                "Foto": [str(link_foto.value)],
+                "Nome Completo": [nomecompleto.value],
+                "Matrícula": [str(matricula.value)], 
+                "CPF": [str(cpf.value)], 
+                "Data de Nascimento": [str(datanascimento.value)],  
+                "Sexo": [str(sexo.value)],  
+                "Tipo Sanguíneo": [str(tipo_sanguineo.value)],  
+                "Estado Civil": [str(estado_civil.value)],  
+                "Data de Casamento": [str(datacasamento.value)],  
+                "Profissão": [str(profissao.value)],  
+                "Naturalidade": [str(naturalidade.value)], 
+                "Nacionalidade": [str(nacionalidade.value)], 
+                "Rua": [str(rua.value)], 
+                "Complemento": [str(complemento.value)],  
+                "Bairro": [str(bairro.value)], 
+                "Município": [str(municipio.value)],  
+                "Estado": [str(estado.value)],  
+                "CEP": [str(cep.value)],  
+                "Tel. Residencial": [str(tel_residencial.value)],  
+                "Tel. Celular": [str(tel_celular.value)],  
+                "E-mail": [str(email.value)],  
+                "Nome do Pai": [str(nome_pai.value)],  
+                "Pai Membro": [str(pai_membro.value)],
+                "Nome da Mãe": [str(nome_mae.value)], 
+                "Mãe Membro": [str(mae_membro.value)],
+                "Nome do Conjuge": [str(nome_conjuge.value)],
+                "Data de Nascimento Conjuge": [str(datanascimento_conjuge.value)],
+                "Conjuge Membro": [str(conjuge_membro.value)],
+                "Cargo atual": [str(cargo_atual.value)],
+                "Data Batismo": [str(databatismo.value)],
+                "Igreja Batismo": [str(igrejabatismo.value)],
+                "Data de Entrada PIB": [str(entradaPIB.value)],
+                "Forma de entrada": [str(formaentrada.value)],
+                "Nome do filho(a) 1": [str(nome_filho1.value)],
+                "Data de Nascimento do filho(a) 1": [str(datanascimento_filho1.value)],
+                "Seu filho(a) 1 é membro da PIB Pavuna?": [str(filho1_membro.value)],
+                "Nome do filho(a) 2": [str(nome_filho2.value)],
+                "Data de Nascimento do filho(a) 2": [str(datanascimento_filho2.value)],
+                "Seu filho(a) 2 é membro da PIB Pavuna?": [str(filho2_membro.value)],
+                "Nome do filho(a) 3": [str(nome_filho3.value)],
+                "Data de Nascimento do filho(a) 3": [str(datanascimento_filho3.value)],
+                "Seu filho(a) 3 é membro da PIB Pavuna?": [str(filho3_membro.value)],
+                "Nome do filho(a) 4": [str(nome_filho4.value)],
+                "Data de Nascimento do filho(a) 4": [str(datanascimento_filho4.value)],
+                "Seu filho(a) 4 é membro da PIB Pavuna?": [str(filho4_membro.value)],
+                "Nome do filho(a) 5": [str(nome_filho5.value)],
+                "Data de Nascimento do filho(a) 5": [str(datanascimento_filho5.value)],
+                "Seu filho(a) 5 é membro da PIB Pavuna?": [str(filho5_membro.value)]
             }
 
             # Convertendo para a lista de valores
@@ -337,6 +340,7 @@ def main(pagina):
 
  
         #--------------------------------------------------
+        link_foto.value = ""
         nomecompleto.value = ""
         matricula.value = ""
         cpf.value = ""
@@ -433,7 +437,7 @@ def main(pagina):
     content=ft.Column(
         controls=[
             ft.Row(controls=[
-                ft.Column(controls=[
+                ft.Column(controls=[B_foto,
                     matricula, nomecompleto, cpf,
                     datanascimento, sexo, tipo_sanguineo, 
                     estado_civil, datacasamento, profissao, 
