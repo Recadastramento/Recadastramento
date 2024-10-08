@@ -46,7 +46,8 @@ def main(pagina):
     lista_nomes = ft.TextField(label="Nome Completo", on_change=atualizar_sugestoes)
 
     # Tópicos do Cadastro
-    #por foto
+    link_foto = ft.TextField(label="link")
+    link_foto.value = " " # valor padrão
     #-------------------------------------------------------------------
     matricula = ft.TextField(label="Matrícula")
     nomecompleto = ft.TextField(label="Nome")
@@ -177,7 +178,60 @@ def main(pagina):
     ],
     value="",  # Valor padrão
     )
+    def upload_to_drive(file_path):
+        SCOPES = ['https://www.googleapis.com/auth/drive.file']
 
+        # Autenticação via OAuth2
+        creds = None
+        if os.path.exists("Ftoken.json"):
+            creds = Credentials.from_authorized_user_file("Ftoken.json", SCOPES)
+        
+        if not creds or not creds.valid:
+            if creds and creds.expired and creds.refresh_token:
+                creds.refresh(Request())
+            else:
+                flow = InstalledAppFlow.from_client_secrets_file("credentials.json", SCOPES)
+                creds = flow.run_local_server(port=0)
+            
+            with open("Ftoken.json", 'w') as token:
+                token.write(creds.to_json())
+        
+        service = build('drive', 'v3', credentials=creds)
+
+        # Carregar o arquivo para o Google Drive
+        file_metadata = {'name': os.path.basename(file_path)}
+        media = MediaIoBaseUpload(io.FileIO(file_path, 'rb'), mimetype='image/jpeg')
+        file = service.files().create(body=file_metadata, media_body=media, fields='id').execute()
+
+        # Obter o link de compartilhamento
+        file_id = file.get('id')
+        service.permissions().create(
+            fileId=file_id,
+            body={'type': 'anyone', 'role': 'reader'}
+        ).execute()
+
+        link = f"https://drive.google.com/thumbnail?sz=w500&id={file_id}"
+        return link
+    file_dialog = ft.FilePicker(on_result=lambda result: on_file_picked(result))
+    pagina.overlay.append(file_dialog)
+    
+    # Função executada após o arquivo ser selecionado
+    def on_file_picked(result):
+        if result.files:
+            file_path = result.files[0].path
+            link = upload_to_drive(file_path)
+            global link_foto
+            link_foto.value = link
+            janela_recadastro.open = False
+            concluir_janela.open = True
+            pagina.update()
+
+    # Função chamada ao clicar no botão
+    def on_upload(evento):
+        file_dialog.pick_files(allow_multiple=False)
+
+
+    B_foto = ft.ElevatedButton("Inserir foto", on_click=on_upload)
     def confirmando(evento):
         nomecompleto_valor = nomecompleto.value
         matricula_valor = matricula.value
@@ -262,6 +316,7 @@ def main(pagina):
             sheet = service.spreadsheets()
             
             dados = {
+                "Foto": [str(link_foto.value)],
                 "Nome Completo": [nomecompleto_valor],
                 "Matrícula": [str(matricula_valor)], 
                 "CPF": [str(cpf_valor)], 
@@ -337,6 +392,7 @@ def main(pagina):
 
  
         #--------------------------------------------------
+        link_foto.value = ""
         nomecompleto.value = ""
         matricula.value = ""
         cpf.value = ""
@@ -384,8 +440,7 @@ def main(pagina):
         nome_filho5.value = ""
         datanascimento_filho5.value = ""
         filho5_membro.value = ""
-
-        pagina.update()
+        
         janela_recadastro.open = False
         concluir_janela.open = True
         pagina.update()
