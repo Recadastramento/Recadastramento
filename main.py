@@ -387,8 +387,7 @@ def main(pagina):
         nome_filho5.value = ""
         datanascimento_filho5.value = ""
         filho5_membro.value = ""
-
-        pagina.update()
+        
         janela_recadastro.open = False
         concluir_janela.open = True
         pagina.update()
